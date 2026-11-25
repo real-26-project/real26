@@ -1,11 +1,19 @@
-# Security Policy
+# Segurança da REAL-26
 
-## Supported Versions
+A REAL-26 está em fase de testnet piloto. Os binários e a carteira desktop desta fase destinam-se a testes com saldo de ensaio.
+
+Relate vulnerabilidades da REAL-26 em privado pela seção **Security → Advisories → Report a vulnerability** do repositório oficial. Informe a revisão testada, a rede, a versão do aplicativo e o comportamento observado. Use uma carteira de ensaio e remova senhas, chaves, cookies RPC e arquivos de backup do material enviado.
+
+Os contatos abaixo são do Bitcoin Core e tratam de problemas da base mantida por aquele projeto.
+
+## Bitcoin Core Security Policy
+
+### Supported Versions
 
 See our website for versions of Bitcoin Core that are currently supported with
 security updates: https://bitcoincore.org/en/lifecycle/#schedule
 
-## Reporting a Vulnerability
+### Reporting a Vulnerability
 
 To report security issues send an email to security@bitcoincore.org (not for support).
 

@@ -6,6 +6,7 @@
 #ifndef BITCOIN_CONSENSUS_PARAMS_H
 #define BITCOIN_CONSENSUS_PARAMS_H
 
+#include <consensus/amount.h>
 #include <script/verify_flags.h>
 #include <uint256.h>
 
@@ -87,6 +88,14 @@ struct BIP9Deployment {
  */
 struct Params {
     uint256 hashGenesisBlock;
+    bool real26_mldsa65{false};
+    bool real26_testnet{false};
+    bool real26_refs{false};
+    bool real26_ensaio{false};
+    int64_t real26_asert_half_life{0};
+    int real26_asert_anchor_height{0};
+    uint32_t real26_asert_initial_bits{0};
+    CAmount nInitialSubsidy{50 * COIN};
     int nSubsidyHalvingInterval;
     /**
      * Hashes of blocks that

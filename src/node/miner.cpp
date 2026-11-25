@@ -184,7 +184,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
 
     // Add an output that spends the full coinbase reward.
     coinbaseTx.vout.resize(1);
-    coinbaseTx.vout[0].scriptPubKey = m_options.coinbase_output_script;
+    coinbaseTx.vout[0].scriptPubKey = m_options.coinbase_output_script.value_or(
+        CScript() << (chainparams.GetConsensus().real26_mldsa65 ? OP_RETURN : OP_TRUE));
     // Block subsidy + fees
     const CAmount block_reward{nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus())};
     coinbaseTx.vout[0].nValue = block_reward;

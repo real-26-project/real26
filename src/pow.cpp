@@ -11,9 +11,62 @@
 #include <uint256.h>
 #include <util/check.h>
 
+#include <algorithm>
+
+static void ScaleDifficultyTarget(arith_uint256& target, int64_t elapsed, const Consensus::Params& params)
+{
+    const int64_t period = params.nPowTargetTimespan;
+    if (!params.real26_testnet) {
+        target *= elapsed;
+        target /= period;
+        return;
+    }
+
+    // Na testnet REAL-26, o alvo de até 252 bits pode transbordar se for
+    // multiplicado antes da divisão. O quociente cresce no máximo quatro vezes.
+    arith_uint256 quotient = target;
+    quotient /= period;
+    const uint64_t remainder = (target - quotient * period).GetLow64();
+    target = quotient * elapsed + (remainder * elapsed) / period;
+}
+
+// ASERT inteiro com a âncora definida nas regras da rede (aserti3-2d).
+static unsigned int Real26AsertTarget(const CBlockIndex& ultimo, const Consensus::Params& params)
+{
+    if (ultimo.nHeight < params.real26_asert_anchor_height) {
+        return params.real26_asert_initial_bits;
+    }
+    const CBlockIndex& ancora = *Assert(ultimo.GetAncestor(params.real26_asert_anchor_height));
+    const int64_t atraso = ultimo.GetBlockTime() - ancora.GetBlockTime() -
+                           (ultimo.nHeight - ancora.nHeight) * params.nPowTargetSpacing;
+    const int64_t expoente = atraso * 65536 / params.real26_asert_half_life;
+    const int64_t deslocamento = expoente >> 16;
+    const uint64_t fracao = static_cast<uint16_t>(expoente);
+    const uint32_t fator = 65536 + ((195766423245049ULL * fracao +
+        971821376ULL * fracao * fracao + 5127ULL * fracao * fracao * fracao + (1ULL << 47)) >> 48);
+
+    const arith_uint256 limite = UintToArith256(params.powLimit);
+    arith_uint256 alvo;
+    alvo.SetCompact(ancora.nBits);
+    // O alvo inicial da rede permite dividir antes da multiplicação sem arredondar.
+    assert((alvo.GetLow64() & 0xffff) == 0 && alvo.bits() <= 255);
+    alvo >>= 16;
+    alvo *= fator;
+    if (deslocamento >= 0) {
+        if (deslocamento + alvo.bits() > 256) return limite.GetCompact();
+        alvo <<= deslocamento;
+    } else {
+        if (deslocamento <= -256) return arith_uint256{1}.GetCompact();
+        alvo >>= -deslocamento;
+    }
+    if (alvo == 0) return arith_uint256{1}.GetCompact();
+    return std::min(alvo, limite).GetCompact();
+}
+
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
     assert(pindexLast != nullptr);
+    if (params.real26_asert_half_life > 0) return Real26AsertTarget(*pindexLast, params);
     unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
 
     // Only change once per difficulty adjustment interval
@@ -75,8 +128,7 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
         bnNew.SetCompact(pindexLast->nBits);
     }
 
-    bnNew *= nActualTimespan;
-    bnNew /= params.nPowTargetTimespan;
+    ScaleDifficultyTarget(bnNew, nActualTimespan, params);
 
     if (bnNew > bnPowLimit)
         bnNew = bnPowLimit;
@@ -88,6 +140,8 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
 // or decrease beyond the permitted limits.
 bool PermittedDifficultyTransition(const Consensus::Params& params, int64_t height, uint32_t old_nbits, uint32_t new_nbits)
 {
+    // A pré-sincronização só tem dois alvos. A validação contextual confere o ASERT exato.
+    if (params.real26_asert_half_life > 0) return DeriveTarget(new_nbits, params.powLimit).has_value();
     if (params.fPowAllowMinDifficultyBlocks) return true;
 
     if (height % params.DifficultyAdjustmentInterval() == 0) {
@@ -101,8 +155,7 @@ bool PermittedDifficultyTransition(const Consensus::Params& params, int64_t heig
         // Calculate the largest difficulty value possible:
         arith_uint256 largest_difficulty_target;
         largest_difficulty_target.SetCompact(old_nbits);
-        largest_difficulty_target *= largest_timespan;
-        largest_difficulty_target /= params.nPowTargetTimespan;
+        ScaleDifficultyTarget(largest_difficulty_target, largest_timespan, params);
 
         if (largest_difficulty_target > pow_limit) {
             largest_difficulty_target = pow_limit;
@@ -117,8 +170,7 @@ bool PermittedDifficultyTransition(const Consensus::Params& params, int64_t heig
         // Calculate the smallest difficulty value possible:
         arith_uint256 smallest_difficulty_target;
         smallest_difficulty_target.SetCompact(old_nbits);
-        smallest_difficulty_target *= smallest_timespan;
-        smallest_difficulty_target /= params.nPowTargetTimespan;
+        ScaleDifficultyTarget(smallest_difficulty_target, smallest_timespan, params);
 
         if (smallest_difficulty_target > pow_limit) {
             smallest_difficulty_target = pow_limit;

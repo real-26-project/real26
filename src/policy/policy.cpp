@@ -211,7 +211,7 @@ static bool CheckSigopsBIP54(const CTransaction& tx, const CCoinsViewCache& inpu
  *
  * We also check the total number of non-witness sigops across the whole transaction, as per BIP54.
  */
-TxValidationState ValidateInputsStandardness(const CTransaction& tx, const CCoinsViewCache& mapInputs)
+TxValidationState ValidateInputsStandardness(const CTransaction& tx, const CCoinsViewCache& mapInputs, bool real26_mldsa65)
 {
     TxValidationState state;
     if (tx.IsCoinBase()) {
@@ -232,6 +232,9 @@ TxValidationState ValidateInputsStandardness(const CTransaction& tx, const CCoin
             state.Invalid(TxValidationResult::TX_INPUTS_NOT_STANDARD, "bad-txns-nonstandard-inputs", strprintf("input %u script unknown", i));
             return state;
         } else if (whichType == TxoutType::WITNESS_UNKNOWN) {
+            // Apenas o programa nativo de 32 bytes é padrão na rede REAL-26.
+            if (real26_mldsa65 && prev.scriptPubKey.size() == 34 &&
+                prev.scriptPubKey[0] == OP_2 && prev.scriptPubKey[1] == 32) continue;
             // WITNESS_UNKNOWN failures are typically also caught with a policy
             // flag in the script interpreter, but it can be helpful to catch
             // this type of NONSTANDARD transaction earlier in transaction

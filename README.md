@@ -1,5 +1,14 @@
-Bitcoin Core integration/staging tree
-=====================================
+# REAL-26
+
+<img src="carteira-desktop/real26.png" alt="Símbolo da REAL-26" width="144">
+
+A REAL-26 é um projeto de moeda em desenvolvimento, baseado no Bitcoin Core. A rede de teste compartilhada usa assinaturas ML-DSA-65 e ajuste de dificuldade ASERT. A carteira nativa para Windows também oferece um perfil de ensaio isolado. Os saldos de teste não têm valor monetário.
+
+- [Documentação da REAL-26 em português](README.pt-BR.md)
+- [Política de segurança](SECURITY.md)
+- [Licença e avisos de autoria](COPYING)
+
+## Bitcoin Core integration/staging tree
 
 https://bitcoincore.org
 

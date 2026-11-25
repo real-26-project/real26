@@ -35,6 +35,11 @@ add_library(bitcoin_wallet STATIC EXCLUDE_FROM_ALL
   walletdb.cpp
   walletutil.cpp
 )
+if(REAL26_EXPERIMENTAL_MLDSA65)
+  target_sources(bitcoin_wallet PRIVATE rpc/real26.cpp)
+  set_property(SOURCE rpc/wallet.cpp APPEND PROPERTY COMPILE_DEFINITIONS REAL26_EXPERIMENTAL_MLDSA65)
+  target_link_libraries(bitcoin_wallet PRIVATE OQS::oqs)
+endif()
 target_link_libraries(bitcoin_wallet
   PRIVATE
     core_interface

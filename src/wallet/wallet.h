@@ -607,6 +607,8 @@ public:
     RecursiveMutex m_relock_mutex;
 
     bool Unlock(const SecureString& strWalletPassphrase);
+    //! Validate a passphrase and use its master key without unlocking the wallet.
+    bool WithPassphraseKey(const SecureString& passphrase, const std::function<void(const CKeyingMaterial&)>& use_key);
     bool ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
     bool EncryptWallet(const SecureString& strWalletPassphrase);
 

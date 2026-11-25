@@ -15,6 +15,7 @@
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
+#include <script/real26_mldsa65.h>
 #include <script/script.h>
 #include <script/verify_flags.h>
 #include <uint256.h>
@@ -452,6 +453,78 @@ public:
             .commitment_period = 616,
             .redownload_buffer_size = 16199, // 16199/616 = ~26.3 commitments
         };
+
+        if (opts.real26_test) {
+            consensus.real26_mldsa65 = true;
+            consensus.real26_testnet = true;
+            consensus.real26_refs = opts.real26_test_refs;
+            consensus.real26_ensaio = opts.real26_ensaio;
+            consensus.powLimit = uint256{"000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
+            consensus.nPowTargetSpacing = 5 * 60;
+            consensus.nPowTargetTimespan = 12 * 60 * 60;
+            consensus.fPowAllowMinDifficultyBlocks = false;
+            consensus.nMinimumChainWork = uint256{};
+            consensus.defaultAssumeValid = uint256{};
+
+            if (opts.real26_test_asert) {
+                consensus.real26_asert_half_life = 3 * 60 * 60;
+                // O tempo entre o gênese e o primeiro bloco não altera a dificuldade inicial.
+                consensus.real26_asert_anchor_height = 1;
+                consensus.real26_asert_initial_bits = 0x1c10e331;
+                consensus.enforce_BIP94 = false;
+                consensus.nInitialSubsidy = 25 * COIN;
+                consensus.nSubsidyHalvingInterval = 420'000;
+                genesis = CreateGenesisBlock("REAL-26 | Testnet compartilhada ASERT ML-DSA-65",
+                                             CScript() << OP_RETURN, 1795132800, 2927368, 0x1e07ffff, 1, 0);
+                assert(genesis.GetHash() == REAL26_TEST_ASERT_GENESIS);
+            } else if (opts.real26_ensaio) {
+                consensus.nInitialSubsidy = 25 * COIN;
+                consensus.nSubsidyHalvingInterval = 420'000;
+                constexpr std::string_view declaracao =
+                    "Queremos um Brasil soberano, onde ninguém tema falar, onde cada pessoa possa guardar o fruto "
+                    "do seu trabalho e onde todo poder responda ao povo. A liberdade é o direito de decidir o próprio futuro.";
+                const CScript dados = CScript() << OP_RETURN << std::vector<unsigned char>(declaracao.begin(), declaracao.end());
+                genesis = CreateGenesisBlock(
+                    "Brasil soberano, povo livre. Nossa voz, nosso trabalho e nosso futuro nos pertencem.",
+                    dados, 1795132800, 3918, 0x1f0fffff, 1, 0);
+                assert(genesis.GetHash() == REAL26_ENSAIO_GENESIS);
+                assert(genesis.hashMerkleRoot == uint256{"b53ad1e70716babad02af3396c52a3125d494ff675c512ee6aa4bce46dccceab"});
+            } else if (opts.real26_test_refs) {
+                genesis = CreateGenesisBlock("REAL-26 | Testnet ML-DSA-65 com referencias",
+                                             CScript() << OP_RETURN, 1794960000, 2482, 0x1f0fffff, 1, 0);
+                assert(genesis.GetHash() == REAL26_TEST_REFS_GENESIS);
+                assert(genesis.hashMerkleRoot == uint256{"e21260f0583f1c44bdfd8bd9261e0edfa0d06d78f861586a126513eb067f71d7"});
+            } else {
+                genesis = CreateGenesisBlock("REAL-26 | Rede de testes com prova de trabalho",
+                                             CScript() << OP_RETURN, 1794960000, 4353, 0x1f0fffff, 1, 0);
+                assert(genesis.GetHash() == REAL26_TEST_GENESIS);
+                assert(genesis.hashMerkleRoot == uint256{"d2a3cc524cb045ee101813d1bf3b6ad10a26f28e34e4e66dd5557951c63a76e7"});
+            }
+            consensus.hashGenesisBlock = genesis.GetHash();
+
+            pchMessageStart = {0xb4, 0x93, 0xd5, opts.real26_test_refs ? uint8_t{0x87} : uint8_t{0x86}};
+            nDefaultPort = opts.real26_test_refs ? 29784 : 29764;
+            if (opts.real26_ensaio) {
+                pchMessageStart = {0xb4, 0x93, 0xd5, 0x88};
+                nDefaultPort = 29794;
+            }
+            if (opts.real26_test_asert) {
+                pchMessageStart = {0xb4, 0x93, 0xd5, 0xa8};
+                nDefaultPort = 29838;
+            }
+            m_assumed_blockchain_size = 0;
+            m_assumed_chain_state_size = 0;
+            vSeeds.clear();
+            vFixedSeeds.clear();
+            m_assumeutxo_data.clear();
+            chainTxData = {};
+            bech32_hrp = opts.real26_test_asert ? "r26s" : opts.real26_ensaio ? "r26e" : opts.real26_test_refs ? "r26tr" : "r26t";
+            base58Prefixes[PUBKEY_ADDRESS] = {65};
+            base58Prefixes[SCRIPT_ADDRESS] = {123};
+            base58Prefixes[SECRET_KEY] = {193};
+            base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x26, 0x54, 0x26};
+            base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x26, 0x51, 0x26};
+        }
     }
 };
 
@@ -676,6 +749,68 @@ public:
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
 
         bech32_hrp = "bcrt";
+
+        if (opts.real26_asert) {
+            consensus.real26_asert_half_life = 3 * 60 * 60;
+            consensus.nPowTargetSpacing = 5 * 60;
+            consensus.fPowNoRetargeting = false;
+            consensus.fPowAllowMinDifficultyBlocks = false;
+            genesis = CreateGenesisBlock(1794960000, 1, 0x200fffff, 1, 50 * COIN);
+            consensus.hashGenesisBlock = genesis.GetHash();
+            assert(consensus.hashGenesisBlock == uint256{"0313193a95e2e977a045797c0c73490abe285ef0cf472a912f2ffcc6d21082b5"});
+            pchMessageStart = {0xb4, 0x93, 0xd5, 0xa3};
+            nDefaultPort = 29834;
+            bech32_hrp = "r26a";
+            vSeeds.clear();
+            m_assumeutxo_data.clear();
+        }
+
+        if (opts.real26_asert && opts.real26_dev) {
+            consensus.real26_mldsa65 = true;
+            consensus.real26_refs = true;
+            consensus.nInitialSubsidy = 25 * COIN;
+            consensus.nSubsidyHalvingInterval = 420'000;
+            genesis = CreateGenesisBlock("REAL-26 | Laboratorio ASERT ML-DSA-65", CScript() << OP_RETURN,
+                                         1794960000, 13, 0x200fffff, 1, 0);
+            consensus.hashGenesisBlock = genesis.GetHash();
+            assert(consensus.hashGenesisBlock == REAL26_ASERT_GENESIS);
+            pchMessageStart = {0xb4, 0x93, 0xd5, 0xa5};
+            nDefaultPort = 29836;
+            bech32_hrp = "r26ap";
+        } else if (opts.real26_dev) {
+            consensus.real26_mldsa65 = true;
+            // O gênese de desenvolvimento tem uma saída OP_RETURN de valor zero.
+            genesis = CreateGenesisBlock("REAL-26 | Rede de desenvolvimento ML-DSA-65",
+                                         CScript() << OP_RETURN, 1794960000, 0, 0x207fffff, 1, 0);
+            consensus.hashGenesisBlock = genesis.GetHash();
+            assert(consensus.hashGenesisBlock == REAL26_DEV_GENESIS);
+            assert(genesis.hashMerkleRoot == uint256{"0bb4d8f4b7a646ddee96d8c2c16c88b5e4a283f91b664fb7955ba14e99fca5bb"});
+
+            // Os dados de descoberta e os snapshots do regtest pertencem a outra cadeia.
+            vSeeds.clear();
+            m_assumeutxo_data.clear();
+#ifdef REAL26_BENCH_15M
+            // O binário de medição usa um enlace incompatível com a rede de 4 milhões.
+            pchMessageStart = {0xb4, 0x93, 0xd5, 0x76};
+            nDefaultPort = 29754;
+#else
+            consensus.real26_refs = opts.real26_refs;
+            pchMessageStart = {0xb4, 0x93, 0xd5, opts.real26_refs ? uint8_t{0x97} : uint8_t{0x66}};
+            nDefaultPort = opts.real26_refs ? 29774 : 29744;
+            if (opts.real26_refs) {
+                genesis = CreateGenesisBlock("REAL-26 | Laboratorio de referencias ML-DSA-65",
+                                             CScript() << OP_RETURN, 1794960000, 0, 0x207fffff, 1, 0);
+                consensus.hashGenesisBlock = genesis.GetHash();
+                assert(consensus.hashGenesisBlock == REAL26_REFS_GENESIS);
+            }
+#endif
+            bech32_hrp = "r26pq";
+            base58Prefixes[PUBKEY_ADDRESS] = {60};
+            base58Prefixes[SCRIPT_ADDRESS] = {122};
+            base58Prefixes[SECRET_KEY] = {188};
+            base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x26, 0x52, 0x26};
+            base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x26, 0x50, 0x26};
+        }
 
         // Copied from Testnet4.
         m_headers_sync_params = HeadersSyncParams{

@@ -14,6 +14,39 @@
 
 BOOST_FIXTURE_TEST_SUITE(pow_tests, BasicTestingSetup)
 
+BOOST_AUTO_TEST_CASE(real26_asert_ancora_no_primeiro_bloco)
+{
+    Consensus::Params params{};
+    params.real26_asert_half_life = 3 * 60 * 60;
+    params.real26_asert_anchor_height = 1;
+    params.real26_asert_initial_bits = 0x1c10e331;
+    params.nPowTargetSpacing = 300;
+    params.powLimit = uint256{"000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
+
+    CBlockIndex genese;
+    genese.nTime = 1795132800;
+    genese.nBits = 0x1e07ffff;
+    BOOST_CHECK_EQUAL(GetNextWorkRequired(&genese, nullptr, params), params.real26_asert_initial_bits);
+
+    CBlockIndex primeiro;
+    primeiro.nHeight = 1;
+    primeiro.nTime = genese.nTime + 6 * 24 * 60 * 60;
+    primeiro.nBits = params.real26_asert_initial_bits;
+    primeiro.pprev = &genese;
+    BOOST_CHECK_EQUAL(GetNextWorkRequired(&primeiro, nullptr, params), params.real26_asert_initial_bits);
+
+    CBlockIndex segundo;
+    segundo.nHeight = 2;
+    segundo.pprev = &primeiro;
+    segundo.nBits = params.real26_asert_initial_bits;
+    segundo.nTime = primeiro.nTime + 300;
+    BOOST_CHECK_EQUAL(GetNextWorkRequired(&segundo, nullptr, params), params.real26_asert_initial_bits);
+    segundo.nTime = primeiro.nTime + 60;
+    BOOST_CHECK_LT(GetNextWorkRequired(&segundo, nullptr, params), params.real26_asert_initial_bits);
+    segundo.nTime = primeiro.nTime + 300 + params.real26_asert_half_life;
+    BOOST_CHECK_EQUAL(GetNextWorkRequired(&segundo, nullptr, params), 0x1c21c662U);
+}
+
 /* Test calculation of next difficulty target with no constraints applying */
 BOOST_AUTO_TEST_CASE(get_next_work)
 {

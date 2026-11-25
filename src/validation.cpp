@@ -40,6 +40,7 @@
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <random.h>
+#include <script/real26_mldsa65.h>
 #include <script/script.h>
 #include <script/sigcache.h>
 #include <signet.h>
@@ -776,6 +777,15 @@ private:
     }
 };
 
+// OP_RETURN permite compromissos de testemunha e outros dados sem criar saídas gastáveis.
+static bool HasReal26Outputs(const CTransaction& tx)
+{
+    return std::ranges::all_of(tx.vout, [](const CTxOut& output) {
+        const auto& script = output.scriptPubKey;
+        return IsReal26Mldsa65Script(script) || (!script.empty() && script.front() == OP_RETURN);
+    });
+}
+
 bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
 {
     AssertLockHeld(cs_main);
@@ -791,6 +801,10 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
 
     // Alias what we need out of ws
     TxValidationState& state = ws.m_state;
+
+    if (m_active_chainstate.m_chainman.GetConsensus().real26_mldsa65 && !HasReal26Outputs(tx)) {
+        return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-real26-output-script");
+    }
 
     if (!CheckTransaction(tx, state)) {
         return false; // state filled in by CheckTransaction
@@ -891,7 +905,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     }
 
     if (m_pool.m_opts.require_standard) {
-        state = ValidateInputsStandardness(tx, m_view);
+        state = ValidateInputsStandardness(tx, m_view, m_active_chainstate.m_chainman.GetConsensus().real26_mldsa65);
         if (state.IsInvalid()) {
             return false;
         }
@@ -1133,7 +1147,17 @@ bool MemPoolAccept::PolicyScriptChecks(Workspace& ws)
     const CTransaction& tx = *ws.m_ptx;
     TxValidationState& state = ws.m_state;
 
-    constexpr script_verify_flags scriptVerifyFlags = STANDARD_SCRIPT_VERIFY_FLAGS;
+    script_verify_flags scriptVerifyFlags = STANDARD_SCRIPT_VERIFY_FLAGS;
+    if (m_active_chainstate.m_chainman.GetConsensus().real26_mldsa65) {
+        scriptVerifyFlags |= SCRIPT_VERIFY_REAL26_MLDSA65;
+        if (m_active_chainstate.m_chainman.GetConsensus().real26_testnet) {
+            scriptVerifyFlags |= SCRIPT_VERIFY_REAL26_TESTNET;
+        }
+    }
+
+    if (m_active_chainstate.m_chainman.GetConsensus().real26_refs) scriptVerifyFlags |= SCRIPT_VERIFY_REAL26_REFS;
+    if (m_active_chainstate.m_chainman.GetConsensus().real26_ensaio) scriptVerifyFlags |= SCRIPT_VERIFY_REAL26_ENSAIO;
+    if (m_active_chainstate.m_chainman.GetConsensus().real26_asert_half_life > 0) scriptVerifyFlags |= SCRIPT_VERIFY_REAL26_ASERT;
 
     // Check input scripts and signatures.
     // This is done last to help prevent CPU exhaustion denial-of-service attacks.
@@ -1837,10 +1861,7 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
     if (halvings >= 64)
         return 0;
 
-    CAmount nSubsidy = 50 * COIN;
-    // Subsidy is cut in half every 210,000 blocks which will occur approximately every 4 years.
-    nSubsidy >>= halvings;
-    return nSubsidy;
+    return consensusParams.nInitialSubsidy >> halvings;
 }
 
 CoinsViews::CoinsViews(DBParams db_params, CoinsViewOptions options)
@@ -2284,6 +2305,11 @@ script_verify_flags GetBlockScriptFlags(const CBlockIndex& block_index, const Ch
         flags |= SCRIPT_VERIFY_NULLDUMMY;
     }
 
+    if (consensusparams.real26_mldsa65) flags |= SCRIPT_VERIFY_REAL26_MLDSA65;
+    if (consensusparams.real26_testnet) flags |= SCRIPT_VERIFY_REAL26_TESTNET;
+    if (consensusparams.real26_refs) flags |= SCRIPT_VERIFY_REAL26_REFS;
+    if (consensusparams.real26_ensaio) flags |= SCRIPT_VERIFY_REAL26_ENSAIO;
+    if (consensusparams.real26_asert_half_life > 0) flags |= SCRIPT_VERIFY_REAL26_ASERT;
     return flags;
 }
 
@@ -2342,7 +2368,9 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
     }
 
     const char* script_check_reason;
-    if (m_chainman.AssumedValidBlock().IsNull()) {
+    if (params.GetConsensus().real26_mldsa65) {
+        script_check_reason = "REAL-26 sempre verifica as assinaturas";
+    } else if (m_chainman.AssumedValidBlock().IsNull()) {
         script_check_reason = "assumevalid=0 (always verify)";
     } else {
         constexpr int64_t TWO_WEEKS_IN_SECONDS{60 * 60 * 24 * 7 * 2};
@@ -3966,6 +3994,10 @@ bool CheckBlock(const CBlock& block, BlockValidationState& state, const Consensu
     // Must check for duplicate inputs (see CVE-2018-17144)
     for (const auto& tx : block.vtx) {
         TxValidationState tx_state;
+        if (consensusParams.real26_mldsa65 && !HasReal26Outputs(*tx)) {
+            return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-real26-output-script",
+                                 strprintf("Saída incompatível com a REAL-26 na transação %s", tx->GetHash().ToString()));
+        }
         if (!CheckTransaction(*tx, tx_state)) {
             // CheckBlock() does context-free validation checks. The only
             // possible failures are consensus failures.

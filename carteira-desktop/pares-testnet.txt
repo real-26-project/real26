@@ -1,0 +1,3 @@
+# Um endereço HOST:29838 por linha, após validação externa dos nós.
+# Inclua apenas nós REAL-26 alcançáveis diretamente, com endereços estáveis.
+18.119.28.41:29838

@@ -1133,9 +1133,22 @@ RPCMethod abandontransaction();
 RPCMethod rescanblockchain();
 RPCMethod abortrescan();
 
+#ifdef REAL26_EXPERIMENTAL_MLDSA65
+RPCMethod getreal26address();
+RPCMethod sendreal26();
+RPCMethod sendreal26many();
+RPCMethod verifyreal26passphrase();
+#endif
+
 std::span<const CRPCCommand> GetWalletRPCCommands()
 {
     static const CRPCCommand commands[]{
+#ifdef REAL26_EXPERIMENTAL_MLDSA65
+        {"wallet", &getreal26address},
+        {"wallet", &sendreal26},
+        {"wallet", &sendreal26many},
+        {"wallet", &verifyreal26passphrase},
+#endif
         {"rawtransactions", &fundrawtransaction},
         {"wallet", &abandontransaction},
         {"wallet", &abortrescan},

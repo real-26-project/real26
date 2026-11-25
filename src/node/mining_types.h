@@ -69,8 +69,8 @@ struct BlockCreateOptions {
      */
     size_t coinbase_output_max_additional_sigops{DEFAULT_COINBASE_OUTPUT_MAX_ADDITIONAL_SIGOPS};
     /**
-     * Script to put in the coinbase transaction. The default is an
-     * anyone-can-spend dummy.
+     * Script to put in the coinbase transaction. When omitted, the miner
+     * inserts a dummy output that template consumers must replace.
      *
      * Should only be used for tests, when the default doesn't suffice.
      *
@@ -83,7 +83,7 @@ struct BlockCreateOptions {
      * The size and sigops are not checked against
      * coinbase_max_additional_weight and coinbase_output_max_additional_sigops.
      */
-    CScript coinbase_output_script{CScript() << OP_TRUE};
+    std::optional<CScript> coinbase_output_script{};
     /**
      * Whether to call TestBlockValidity() at the end of CreateNewBlock().
      * Should only be disabled for tests / benchmarks.

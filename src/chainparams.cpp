@@ -117,6 +117,9 @@ void ReadSigNetArgs(const ArgsManager& args, CChainParams::SigNetOptions& option
 
 void ReadRegTestArgs(const ArgsManager& args, CChainParams::RegTestOptions& options)
 {
+    options.real26_dev = args.GetBoolArg("-real26dev", false);
+    options.real26_refs = args.GetBoolArg("-real26refs", false);
+    options.real26_asert = args.GetBoolArg("-real26asert", false);
     if (auto value = args.GetBoolArg("-fastprune")) options.fastprune = *value;
     if (HasTestOption(args, "bip94")) options.enforce_bip94 = true;
 
@@ -146,6 +149,10 @@ std::unique_ptr<const CChainParams> CreateChainParams(const ArgsManager& args, c
     case ChainType::TESTNET4: {
         auto opts = CChainParams::TestNetOptions{};
         ReadTestNetArgs(args, opts);
+        opts.real26_test = args.GetBoolArg("-real26test", false);
+        opts.real26_test_refs = args.GetBoolArg("-real26testrefs", false);
+        opts.real26_ensaio = args.GetBoolArg("-real26ensaio", false);
+        opts.real26_test_asert = args.GetBoolArg("-real26testasert", false);
         return CChainParams::TestNet4(opts);
     }
     case ChainType::SIGNET: {

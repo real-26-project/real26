@@ -156,6 +156,9 @@ public:
     struct RegTestOptions {
         DeploymentOptions dep_opts{};
         bool fastprune{false};
+        bool real26_dev{false};
+        bool real26_refs{false};
+        bool real26_asert{false};
         bool enforce_bip94{false};
     };
 
@@ -164,6 +167,10 @@ public:
     };
 
     struct TestNetOptions {
+        bool real26_test{false};
+        bool real26_test_refs{false};
+        bool real26_ensaio{false};
+        bool real26_test_asert{false};
         DeploymentOptions dep_opts{};
     };
 

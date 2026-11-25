@@ -86,6 +86,21 @@ target_link_libraries(bitcoin_consensus
     secp256k1
 )
 
+option(REAL26_EXPERIMENTAL_MLDSA65 "Compila suporte experimental a ML-DSA-65 para -real26dev" OFF)
+if(REAL26_BENCH_15M AND NOT REAL26_EXPERIMENTAL_MLDSA65)
+  message(FATAL_ERROR "O teste de 15 milhões exige REAL26_EXPERIMENTAL_MLDSA65.")
+endif()
+if(REAL26_EXPERIMENTAL_MLDSA65)
+  find_package(liboqs 0.16.0 EXACT CONFIG REQUIRED)
+  target_compile_definitions(bitcoin_consensus PUBLIC REAL26_EXPERIMENTAL_MLDSA65)
+  target_link_libraries(bitcoin_consensus PRIVATE OQS::oqs)
+  if(BUILD_TESTS)
+    add_executable(real26_mldsa65_sign_test test/real26_mldsa65_sign.cpp wallet/real26_mldsa65_sign.cpp)
+    find_package(OpenSSL REQUIRED COMPONENTS Crypto)
+    target_link_libraries(real26_mldsa65_sign_test PRIVATE core_interface bitcoin_consensus OQS::oqs OpenSSL::Crypto)
+  endif()
+endif()
+
 if(WITH_ZMQ)
   add_subdirectory(zmq)
 endif()

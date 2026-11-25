@@ -148,6 +148,11 @@ enum class script_verify_flag_name : uint8_t {
 
     // Constants to point to the highest flag in use. Add new flags above this line.
     //
+    SCRIPT_VERIFY_REAL26_MLDSA65,
+    SCRIPT_VERIFY_REAL26_TESTNET,
+    SCRIPT_VERIFY_REAL26_REFS,
+    SCRIPT_VERIFY_REAL26_ENSAIO,
+    SCRIPT_VERIFY_REAL26_ASERT,
     SCRIPT_VERIFY_END_MARKER
 };
 using enum script_verify_flag_name;
@@ -285,6 +290,15 @@ public:
         return false;
     }
 
+    virtual std::optional<unsigned char> ExpectedMldsa65Reference() const { return std::nullopt; }
+
+    virtual std::span<const unsigned char> ResolveMldsa65Key(unsigned int index) const { return {}; }
+
+    virtual bool CheckMldsa65Signature(std::span<const unsigned char> sig, std::span<const unsigned char> pubkey, const uint256& genesis) const
+    {
+        return false;
+    }
+
     virtual bool CheckLockTime(const CScriptNum& nLockTime) const
     {
          return false;
@@ -330,6 +344,9 @@ public:
     GenericTransactionSignatureChecker(const T* txToIn, unsigned int nInIn, const CAmount& amountIn, const PrecomputedTransactionData& txdataIn, MissingDataBehavior mdb) : txTo(txToIn), m_mdb(mdb), nIn(nInIn), amount(amountIn), txdata(&txdataIn) {}
     bool CheckECDSASignature(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const override;
     bool CheckSchnorrSignature(std::span<const unsigned char> sig, std::span<const unsigned char> pubkey, SigVersion sigversion, ScriptExecutionData& execdata, ScriptError* serror = nullptr) const override;
+    std::optional<unsigned char> ExpectedMldsa65Reference() const override;
+    std::span<const unsigned char> ResolveMldsa65Key(unsigned int index) const override;
+    bool CheckMldsa65Signature(std::span<const unsigned char> sig, std::span<const unsigned char> pubkey, const uint256& genesis) const override;
     bool CheckLockTime(const CScriptNum& nLockTime) const override;
     bool CheckSequence(const CScriptNum& nSequence) const override;
 };

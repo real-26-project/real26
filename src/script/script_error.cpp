@@ -119,6 +119,8 @@ std::string ScriptErrorString(const ScriptError serror)
             return "Signature is found in scriptCode";
         case SCRIPT_ERR_SCRIPTNUM:
             return "Script number overflowed or is non-minimally encoded";
+        case SCRIPT_ERR_REAL26_SPEND_TYPE:
+            return "A REAL-26 exige gasto nativo ML-DSA-65";
         case SCRIPT_ERR_UNKNOWN_ERROR:
         case SCRIPT_ERR_ERROR_COUNT:
             break;

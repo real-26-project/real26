@@ -4,6 +4,11 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <script/interpreter.h>
+#include <script/real26_mldsa65.h>
+
+#ifdef REAL26_EXPERIMENTAL_MLDSA65
+#include <oqs/oqs.h>
+#endif
 
 #include <crypto/ripemd160.h>
 #include <crypto/sha1.h>
@@ -1426,11 +1431,9 @@ void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut>&& spent
     for (size_t inpos = 0; inpos < txTo.vin.size() && !(uses_bip143_segwit && uses_bip341_taproot); ++inpos) {
         if (!txTo.vin[inpos].scriptWitness.IsNull()) {
             if (m_spent_outputs_ready && m_spent_outputs[inpos].scriptPubKey.size() == 2 + WITNESS_V1_TAPROOT_SIZE &&
-                m_spent_outputs[inpos].scriptPubKey[0] == OP_1) {
-                // Treat every witness-bearing spend with 34-byte scriptPubKey that starts with OP_1 as a Taproot
-                // spend. This only works if spent_outputs was provided as well, but if it wasn't, actual validation
-                // will fail anyway. Note that this branch may trigger for scriptPubKeys that aren't actually segwit
-                // but in that case validation will fail as SCRIPT_ERR_WITNESS_UNEXPECTED anyway.
+                (m_spent_outputs[inpos].scriptPubKey[0] == OP_1 ||
+                 m_spent_outputs[inpos].scriptPubKey[0] == OP_2)) {
+                // Taproot e ML-DSA-65 usam os mesmos dados pré-calculados do BIP341.
                 uses_bip341_taproot = true;
             } else {
                 // Treat every spend that's not known to native witness v1 as a Witness v0 spend. This branch may
@@ -1490,7 +1493,7 @@ static bool HandleMissingData(MissingDataBehavior mdb)
 }
 
 template<typename T>
-bool SignatureHashSchnorr(uint256& hash_out, ScriptExecutionData& execdata, const T& tx_to, uint32_t in_pos, uint8_t hash_type, SigVersion sigversion, const PrecomputedTransactionData& cache, MissingDataBehavior mdb)
+static bool SignatureHashWitnessV1(uint256& hash_out, ScriptExecutionData& execdata, const T& tx_to, uint32_t in_pos, uint8_t hash_type, SigVersion sigversion, const PrecomputedTransactionData& cache, MissingDataBehavior mdb, const uint256* real26_genesis = nullptr)
 {
     uint8_t ext_flag, key_version;
     switch (sigversion) {
@@ -1514,7 +1517,9 @@ bool SignatureHashSchnorr(uint256& hash_out, ScriptExecutionData& execdata, cons
         return HandleMissingData(mdb);
     }
 
-    HashWriter ss{HASHER_TAPSIGHASH};
+    static const HashWriter MLDSA65_SIGHASH{TaggedHash("REAL26/MLDSA65/SigHash/v1")};
+    HashWriter ss{real26_genesis ? MLDSA65_SIGHASH : HASHER_TAPSIGHASH};
+    if (real26_genesis) ss << *real26_genesis;
 
     // Epoch
     static constexpr uint8_t EPOCH = 0;
@@ -1578,6 +1583,13 @@ bool SignatureHashSchnorr(uint256& hash_out, ScriptExecutionData& execdata, cons
     hash_out = ss.GetSHA256();
     return true;
 }
+
+template <typename T>
+bool SignatureHashSchnorr(uint256& hash_out, ScriptExecutionData& execdata, const T& tx_to, uint32_t in_pos, uint8_t hash_type, SigVersion sigversion, const PrecomputedTransactionData& cache, MissingDataBehavior mdb)
+{
+    return SignatureHashWitnessV1(hash_out, execdata, tx_to, in_pos, hash_type, sigversion, cache, mdb);
+}
+
 
 int SigHashCache::CacheIndex(int32_t hash_type) const noexcept
 {
@@ -1751,6 +1763,90 @@ bool GenericTransactionSignatureChecker<T>::CheckSchnorrSignature(std::span<cons
     return true;
 }
 
+static constexpr size_t MLDSA65_SIG_SIZE = 3309;
+static constexpr size_t MLDSA65_PUBKEY_SIZE = 1952;
+
+static std::optional<unsigned char> FindMldsa65Reference(const PrecomputedTransactionData& data, unsigned int input)
+{
+    if (!data.m_spent_outputs_ready || input >= data.m_spent_outputs.size()) return std::nullopt;
+    // O índice de um byte cobre as primeiras 256 entradas.
+    for (unsigned int index = 0; index < std::min(input, 256U); ++index) {
+        if (data.m_spent_outputs[index].scriptPubKey == data.m_spent_outputs[input].scriptPubKey) {
+            return static_cast<unsigned char>(index);
+        }
+    }
+    return std::nullopt;
+}
+
+#ifdef REAL26_EXPERIMENTAL_MLDSA65
+template <class T>
+static bool ComputeMldsa65SignatureHash(uint256& sighash, const T& tx, unsigned int input, const PrecomputedTransactionData& data, const uint256& genesis)
+{
+    ScriptExecutionData execdata;
+    execdata.m_annex_init = true;
+    execdata.m_annex_present = false;
+    return SignatureHashWitnessV1(sighash, execdata, tx, input, SIGHASH_DEFAULT,
+                                   SigVersion::TAPROOT, data, MissingDataBehavior::FAIL, &genesis);
+}
+
+bool Real26Mldsa65SignatureHash(uint256& sighash, const CMutableTransaction& tx, unsigned int input, const PrecomputedTransactionData& data)
+{
+    return ComputeMldsa65SignatureHash(sighash, tx, input, data, REAL26_DEV_GENESIS);
+}
+
+bool SignReal26Mldsa65Input(CMutableTransaction& tx, unsigned int input, const PrecomputedTransactionData& data,
+                           std::span<const unsigned char> public_key, std::span<const unsigned char> secret_key, const uint256& genesis)
+{
+    if (input >= tx.vin.size() || public_key.size() != MLDSA65_PUBKEY_SIZE ||
+        secret_key.size() != OQS_SIG_ml_dsa_65_length_secret_key) return false;
+    uint256 sighash;
+    std::vector<unsigned char> signature(MLDSA65_SIG_SIZE);
+    size_t length{0};
+    if (!ComputeMldsa65SignatureHash(sighash, tx, input, data, genesis) ||
+        OQS_SIG_ml_dsa_65_sign(signature.data(), &length, sighash.begin(), sighash.size(), secret_key.data()) != OQS_SUCCESS ||
+        length != signature.size() ||
+        OQS_SIG_ml_dsa_65_verify(sighash.begin(), sighash.size(), signature.data(), length, public_key.data()) != OQS_SUCCESS) return false;
+    const bool referencias = genesis == REAL26_REFS_GENESIS || genesis == REAL26_TEST_REFS_GENESIS ||
+                             genesis == REAL26_ENSAIO_GENESIS || genesis == REAL26_ASERT_GENESIS ||
+                             genesis == REAL26_TEST_ASERT_GENESIS;
+    const auto referencia = referencias ? FindMldsa65Reference(data, input) : std::nullopt;
+    auto chave = referencia ? std::vector<unsigned char>{*referencia}
+                            : std::vector<unsigned char>{public_key.begin(), public_key.end()};
+    tx.vin[input].scriptWitness.stack = {std::move(signature), std::move(chave)};
+    return true;
+}
+#endif
+
+template <class T>
+std::optional<unsigned char> GenericTransactionSignatureChecker<T>::ExpectedMldsa65Reference() const
+{
+    return txdata ? FindMldsa65Reference(*txdata, nIn) : std::nullopt;
+}
+
+template <class T>
+std::span<const unsigned char> GenericTransactionSignatureChecker<T>::ResolveMldsa65Key(unsigned int index) const
+{
+    // Referências só podem apontar diretamente para uma chave completa anterior.
+    if (index >= nIn || index >= txTo->vin.size()) return {};
+    const auto& stack = txTo->vin[index].scriptWitness.stack;
+    if (stack.size() != 2 || stack[1].size() != MLDSA65_PUBKEY_SIZE) return {};
+    return stack[1];
+}
+
+template <class T>
+bool GenericTransactionSignatureChecker<T>::CheckMldsa65Signature(std::span<const unsigned char> sig, std::span<const unsigned char> pubkey, const uint256& genesis) const
+{
+#ifdef REAL26_EXPERIMENTAL_MLDSA65
+    if (sig.size() != MLDSA65_SIG_SIZE || pubkey.size() != MLDSA65_PUBKEY_SIZE || !txdata) return false;
+    uint256 sighash;
+    if (!ComputeMldsa65SignatureHash(sighash, *txTo, nIn, *txdata, genesis)) return false;
+    return OQS_SIG_ml_dsa_65_verify(sighash.begin(), sighash.size(),
+                                            sig.data(), sig.size(), pubkey.data()) == OQS_SUCCESS;
+#else
+    return false;
+#endif
+}
+
 template <class T>
 bool GenericTransactionSignatureChecker<T>::CheckLockTime(const CScriptNum& nLockTime) const
 {
@@ -1836,6 +1932,8 @@ bool GenericTransactionSignatureChecker<T>::CheckSequence(const CScriptNum& nSeq
 }
 
 // explicit instantiation
+template bool SignatureHashSchnorr<CTransaction>(uint256&, ScriptExecutionData&, const CTransaction&, uint32_t, uint8_t, SigVersion, const PrecomputedTransactionData&, MissingDataBehavior);
+template bool SignatureHashSchnorr<CMutableTransaction>(uint256&, ScriptExecutionData&, const CMutableTransaction&, uint32_t, uint8_t, SigVersion, const PrecomputedTransactionData&, MissingDataBehavior);
 template class GenericTransactionSignatureChecker<CTransaction>;
 template class GenericTransactionSignatureChecker<CMutableTransaction>;
 
@@ -1924,6 +2022,16 @@ static bool VerifyTaprootCommitment(const std::vector<unsigned char>& control, c
     return q.CheckTapTweak(p, merkle_root, control[0] & 1);
 }
 
+static const uint256& Real26SignatureGenesis(script_verify_flags flags)
+{
+    const bool testnet = bool(flags & SCRIPT_VERIFY_REAL26_TESTNET);
+    const bool referencias = bool(flags & SCRIPT_VERIFY_REAL26_REFS);
+    if (flags & SCRIPT_VERIFY_REAL26_ASERT) return testnet ? REAL26_TEST_ASERT_GENESIS : REAL26_ASERT_GENESIS;
+    if (flags & SCRIPT_VERIFY_REAL26_ENSAIO) return REAL26_ENSAIO_GENESIS;
+    if (testnet) return referencias ? REAL26_TEST_REFS_GENESIS : REAL26_TEST_GENESIS;
+    return referencias ? REAL26_REFS_GENESIS : REAL26_DEV_GENESIS;
+}
+
 static bool VerifyWitnessProgram(const CScriptWitness& witness, int witversion, const std::vector<unsigned char>& program, script_verify_flags flags, const BaseSignatureChecker& checker, ScriptError* serror, bool is_p2sh)
 {
     CScript exec_script; //!< Actually executed script (last stack item in P2WSH; implied P2PKH script in P2WPKH; leaf script in P2TR)
@@ -1997,6 +2105,32 @@ static bool VerifyWitnessProgram(const CScriptWitness& witness, int witversion, 
             }
             return set_success(serror);
         }
+    } else if (witversion == 2 && (flags & SCRIPT_VERIFY_REAL26_MLDSA65)) {
+        if (is_p2sh || program.size() != 32 || stack.size() != 2 ||
+            stack[0].size() != MLDSA65_SIG_SIZE) {
+            return set_error(serror, SCRIPT_ERR_WITNESS_PROGRAM_MISMATCH);
+        }
+        std::span<const unsigned char> public_key{stack[1]};
+        const bool referencias = bool(flags & SCRIPT_VERIFY_REAL26_REFS);
+        if (referencias) {
+            if (const auto esperada = checker.ExpectedMldsa65Reference()) {
+                if (public_key.size() != 1 || public_key.front() != *esperada) {
+                    return set_error(serror, SCRIPT_ERR_WITNESS_PROGRAM_MISMATCH);
+                }
+                public_key = checker.ResolveMldsa65Key(*esperada);
+            }
+        }
+        const auto& genesis = Real26SignatureGenesis(flags);
+        if (public_key.size() != MLDSA65_PUBKEY_SIZE) {
+            return set_error(serror, SCRIPT_ERR_WITNESS_PROGRAM_MISMATCH);
+        }
+        HashWriter hasher;
+        hasher.write(std::as_bytes(public_key));
+        const uint256 pubkey_hash = hasher.GetSHA256();
+        if (!std::equal(pubkey_hash.begin(), pubkey_hash.end(), program.begin()) || !checker.CheckMldsa65Signature(stack[0], public_key, genesis)) {
+            return set_error(serror, SCRIPT_ERR_EVAL_FALSE);
+        }
+        return set_success(serror);
     } else if (!is_p2sh && CScript::IsPayToAnchor(witversion, program)) {
         return true;
     } else {
@@ -2014,6 +2148,17 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
     static const CScriptWitness emptyWitness;
     if (witness == nullptr) {
         witness = &emptyWitness;
+    }
+    // A REAL-26 valida somente programas nativos ML-DSA-65.
+    if (flags & SCRIPT_VERIFY_REAL26_MLDSA65) {
+        if (!IsReal26Mldsa65Script(scriptPubKey)) {
+            return set_error(serror, SCRIPT_ERR_REAL26_SPEND_TYPE);
+        }
+        if (!scriptSig.empty()) {
+            return set_error(serror, SCRIPT_ERR_WITNESS_MALLEATED);
+        }
+        return VerifyWitnessProgram(*witness, 2, {scriptPubKey.begin() + 2, scriptPubKey.end()},
+                                    flags, checker, serror, /*is_p2sh=*/false);
     }
     bool hadWitness = false;
 

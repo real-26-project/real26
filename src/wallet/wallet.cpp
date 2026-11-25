@@ -644,6 +644,21 @@ bool CWallet::Unlock(const SecureString& strWalletPassphrase)
     return false;
 }
 
+bool CWallet::WithPassphraseKey(const SecureString& passphrase, const std::function<void(const CKeyingMaterial&)>& use_key)
+{
+    LOCK(cs_wallet);
+    for (const auto& [_, master_key] : mapMasterKeys) {
+        CKeyingMaterial key;
+        if (!DecryptMasterKey(passphrase, master_key, key) || key.size() != WALLET_CRYPTO_KEY_SIZE) continue;
+        if (!std::ranges::all_of(m_spk_managers, [&](const auto& manager) {
+                return manager.second->CheckDecryptionKey(key);
+            })) continue;
+        use_key(key);
+        return true;
+    }
+    return false;
+}
+
 bool CWallet::ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase)
 {
     bool fWasLocked = IsLocked();

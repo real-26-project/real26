@@ -106,6 +106,7 @@ option(BUILD_GUI "Build bitcoin-qt executable." OFF)
 option(BUILD_CLI "Build bitcoin-cli executable." ON)
 
 option(BUILD_TESTS "Build test_bitcoin and other unit test executables." ON)
+option(REAL26_BENCH_15M "Compila um nó exclusivo de regtest para medir blocos REAL-26 de 15 milhões de unidades" OFF)
 option(BUILD_TX "Build bitcoin-tx executable." ${BUILD_TESTS})
 option(BUILD_UTIL "Build bitcoin-util executable." ${BUILD_TESTS})
 cmake_dependent_option(BUILD_GUI_TESTS "Build test_bitcoin-qt executable." ON "BUILD_GUI;BUILD_TESTS" OFF)
@@ -158,6 +159,9 @@ check_cxx_features()
 # It is a usage requirement for all targets except for secp256k1, which
 # gets its flags by other means.
 add_library(core_interface INTERFACE)
+if(REAL26_BENCH_15M)
+  target_compile_definitions(core_interface INTERFACE REAL26_BENCH_15M)
+endif()
 add_library(core_interface_relwithdebinfo INTERFACE)
 add_library(core_interface_debug INTERFACE)
 target_link_libraries(core_interface INTERFACE

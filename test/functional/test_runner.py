@@ -97,6 +97,14 @@ EXTENDED_SCRIPTS = [
 TOOL_BENCH_SANITY_CHECK = "tool_bench_sanity_check.py"
 
 BASE_SCRIPTS = [
+    'feature_real26_testnet.py',
+    'feature_real26_testnet.py --refs',
+    'feature_real26_testnet.py --ensaio',
+    'feature_real26_regtest.py',
+    'feature_real26_refs.py',
+    'feature_real26_asert.py',
+    'feature_real26_asert_pq.py',
+    'feature_real26_asert_pq.py --compartilhado',
     # Special scripts that are "expanded" later
     TOOL_BENCH_SANITY_CHECK,
     # Scripts that are run by default.
