@@ -1,0 +1,70 @@
+name: REAL-26
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: real26-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testnet:
+    name: Testnet ML-DSA-65
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Instalar dependências
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build pkgconf libboost-dev libsqlite3-dev libssl-dev
+
+      - name: Compilar a liboqs para ML-DSA-65
+        run: |
+          git init "$RUNNER_TEMP/liboqs"
+          git -C "$RUNNER_TEMP/liboqs" fetch --depth 1 https://github.com/open-quantum-safe/liboqs.git 5a1a854b0dc9f2141bdc771c555ee60c37950183
+          git -C "$RUNNER_TEMP/liboqs" checkout --detach FETCH_HEAD
+          cmake -S "$RUNNER_TEMP/liboqs" -B "$RUNNER_TEMP/oqs-build" -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DOQS_USE_OPENSSL=OFF -DOQS_BUILD_ONLY_LIB=ON \
+            -DOQS_MINIMAL_BUILD=SIG_ml_dsa_65 -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/oqs"
+          cmake --build "$RUNNER_TEMP/oqs-build" --parallel 4
+          cmake --install "$RUNNER_TEMP/oqs-build"
+
+      - name: Compilar a REAL-26 e executar as oito suítes
+        run: |
+          cmake -S . -B build -G Ninja -DBUILD_GUI=OFF -DBUILD_TESTS=ON \
+            -DENABLE_IPC=OFF -DWITH_ZMQ=OFF -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS_DEBUG=-g0 -DCMAKE_C_FLAGS_DEBUG=-g0 \
+            -DREAL26_EXPERIMENTAL_MLDSA65=ON -DREAL26_BENCH_15M=OFF \
+            -Dliboqs_DIR="$RUNNER_TEMP/oqs/lib/cmake/liboqs"
+          REAL26_JOBS=4 bash experimentos/verificar-candidata.sh build
+
+      - name: Gerar e verificar o pacote Ubuntu
+        run: |
+          python3 contrib/real26/gerar_pacote_ubuntu.py --binarios build/bin --saida build/real26-testnet-ubuntu-x86_64.tar.gz
+          mkdir -p "$RUNNER_TEMP/pacote"
+          cd build
+          sha256sum -c real26-testnet-ubuntu-x86_64.tar.gz.sha256
+          tar -xzf real26-testnet-ubuntu-x86_64.tar.gz -C "$RUNNER_TEMP/pacote"
+          test -x "$RUNNER_TEMP/pacote/bitcoind"
+          test -x "$RUNNER_TEMP/pacote/bitcoin-cli"
+          "$RUNNER_TEMP/pacote/bitcoind" --version
+          "$RUNNER_TEMP/pacote/bitcoin-cli" --version
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: real26-validacao-testnet
+          path: |
+            build/real26-candidata.csv
+            build/real26-testnet-ubuntu-x86_64.tar.gz*
+          if-no-files-found: error

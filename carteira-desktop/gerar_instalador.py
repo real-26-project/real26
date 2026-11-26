@@ -31,6 +31,9 @@ def copiar_pacote(destino, binarios):
     fontes = {
         "carteira-desktop": (
             "carteira.py",
+            "dialogos.py",
+            "fluxos_carteira.py",
+            "tema.py",
             "idiomas.py",
             "no_real26.py",
             "mineracao.py",
@@ -127,6 +130,12 @@ def main():
     parser.add_argument(
         "--binarios", required=True, type=Path, help="Diretório com o nó REAL-26 compilado para Windows x64."
     )
+    parser.add_argument(
+        "--saida",
+        type=Path,
+        default=RAIZ / "releases" / "REAL-26-Carteira-Ensaio-Windows-Nativa-x64.exe",
+        help="Caminho do instalador gerado.",
+    )
     args = parser.parse_args()
     if (
         sys.platform != "win32"
@@ -138,13 +147,18 @@ def main():
 
     tkinter.Tcl()
 
-    saida = RAIZ / "releases" / "REAL-26-Carteira-Ensaio-Windows-Nativa-x64.exe"
+    saida = args.saida.resolve()
     saida.parent.mkdir(exist_ok=True)
     with TemporaryDirectory(prefix="real26-empacotar-", dir=saida.parent) as temporario:
         trabalho = Path(temporario)
         pacote = trabalho / "pacote"
         pacote.mkdir()
         copiar_pacote(pacote, args.binarios)
+        subprocess.run(
+            [pacote / "runtime/python.exe", "-E", "-s", "-B", pacote / "carteira-desktop/carteira.py", "--help"],
+            stdout=subprocess.DEVNULL,
+            check=True,
+        )
         remover = trabalho / "remover.nsh"
         manifesto(pacote, remover)
         gerado = trabalho / saida.name

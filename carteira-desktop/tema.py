@@ -1,0 +1,16 @@
+# Distribuído sob a licença MIT. Consulte COPYING.
+"""Paleta e tipografia da carteira REAL-26."""
+
+FUNDO = "#0B1422"
+MARINHO = "#123055"
+LATERAL = "#101E33"
+PAINEL = "#15243A"
+BORDA = "#2C4360"
+TEXTO = "#F4F7FC"
+SUAVE = "#B5C6DB"
+DOURADO = "#FFD16D"
+VERDE = "#78E2B0"
+ERRO = "#FFADA9"
+BOTAO = "#213855"
+HOVER = "#315174"
+FONTE = "Segoe UI"

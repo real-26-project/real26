@@ -1,0 +1,21 @@
+[Unit]
+Description=Nó P2P da testnet REAL-26
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=real26
+Group=real26
+StateDirectory=real26-testnet
+StateDirectoryMode=0700
+ExecStart=/opt/real26/bin/bitcoind -testnet4 -real26test -real26testrefs -real26testasert -noconf -datadir=/var/lib/real26-testnet -disablewallet=1 -listen=1 -port=29838 -rpcport=29837 -rpcbind=127.0.0.1 -dnsseed=0 -fixedseeds=0 -onion=0 -listenonion=0 -natpmp=0 -maxconnections=32 -dbcache=128
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

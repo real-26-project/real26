@@ -6,7 +6,7 @@ A REAL-26 é um projeto brasileiro de moeda digital de código aberto. A **testn
 
 ## Teste no Windows
 
-1. Baixe o instalador **Windows x64** na [release oficial da REAL-26](https://github.com/real-26-project/real26/releases/tag/testnet-v0.2.0) e [verifique o download](#verificação-dos-downloads-da-real-26).
+1. Baixe o instalador **Windows x64** na [release oficial da REAL-26](https://github.com/real-26-project/real26/releases/tag/testnet-v0.2.1) e [verifique o download](#verificação-dos-downloads-da-real-26).
 2. Abra **REAL-26 Carteira Nativa** e clique em **Conectar à testnet**. A carteira tenta conectar automaticamente ao nó inicial da REAL-26.
 3. Crie uma carteira de teste ou escolha **Restaurar backup**. Use **Receber** para copiar seu endereço, **Enviar** para fazer um pagamento de teste ou inicie a mineração na carteira.
 
@@ -22,7 +22,7 @@ O **Teste isolado** roda uma cadeia local com carteiras e saldos próprios. Para
 
 ## Verificação dos downloads da REAL-26
 
-Na [release oficial](https://github.com/real-26-project/real26/releases/tag/testnet-v0.2.0), baixe `SHA256SUMS` e `SHA256SUMS.asc`. Obtenha a [chave pública da REAL-26](REAL-26-RELEASE-KEY.asc) e confirme que a impressão digital é `8BFA 04DE BE28 8B2B EBBD 3192 AA1B 07B0 3319 8941`.
+Na [release oficial](https://github.com/real-26-project/real26/releases/tag/testnet-v0.2.1), baixe `SHA256SUMS` e `SHA256SUMS.asc`. Obtenha a [chave pública da REAL-26](REAL-26-RELEASE-KEY.asc) e confirme que a impressão digital é `8BFA 04DE BE28 8B2B EBBD 3192 AA1B 07B0 3319 8941`.
 
 ```sh
 gpg --show-keys --fingerprint REAL-26-RELEASE-KEY.asc

@@ -54,7 +54,7 @@ Section "Carteira REAL-26"
     CreateShortCut "$SMPROGRAMS\REAL-26 Nativa\Instruções.lnk" "$INSTDIR\README.pt-BR.md"
     CreateShortCut "$SMPROGRAMS\REAL-26 Nativa\Desinstalar.lnk" "$INSTDIR\Desinstalar.exe"
     WriteRegStr HKCU "${REGISTRO}" "DisplayName" "REAL-26 | Carteira nativa de ensaio"
-    WriteRegStr HKCU "${REGISTRO}" "DisplayVersion" "0.2.0-ensaio"
+    WriteRegStr HKCU "${REGISTRO}" "DisplayVersion" "0.2.1-ensaio"
     WriteRegStr HKCU "${REGISTRO}" "Publisher" "REAL-26"
     WriteRegStr HKCU "${REGISTRO}" "InstallLocation" "$INSTDIR"
     WriteRegStr HKCU "${REGISTRO}" "UninstallString" '"$INSTDIR\Desinstalar.exe"'
