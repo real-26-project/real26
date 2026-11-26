@@ -26,7 +26,8 @@ LICENCAS = {
 
 
 def empacotar(binarios, destino):
-    arquivos = {nome: (binarios / nome, 0o755) for nome in ("bitcoind", "bitcoin-cli")}
+    executaveis = {"real26d": binarios / "bitcoind", "real26-cli": binarios / "bitcoin-cli"}
+    arquivos = {nome: (caminho, 0o755) for nome, caminho in executaveis.items()}
     for caminho, _ in arquivos.values():
         with caminho.open("rb") as arquivo:
             cabecalho = arquivo.read(20)
@@ -44,7 +45,7 @@ def empacotar(binarios, destino):
                     for nome, (caminho, modo) in arquivos.items():
                         info = TarInfo(nome)
                         info.mode = modo
-                        if nome in ("bitcoind", "bitcoin-cli"):
+                        if nome in executaveis:
                             with caminho.open("rb") as entrada:
                                 info.size = caminho.stat().st_size
                                 pacote.addfile(info, entrada)

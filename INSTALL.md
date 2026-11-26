@@ -6,7 +6,7 @@ Para instalar e usar a carteira na testnet, siga o [guia da REAL-26](doc/real26/
 
 ## Nó da testnet no Ubuntu 24.04 x86_64
 
-Baixe o pacote Ubuntu da [release oficial](https://github.com/real-26-project/real26/releases/tag/testnet-v0.2.1) e [verifique o download](README.md#verificação-dos-downloads-da-real-26). Tenha a biblioteca de execução `libsqlite3-0` instalada. Depois, extraia o pacote e entre no diretório de extração.
+Baixe o pacote Ubuntu da [release oficial](https://github.com/real-26-project/real26/releases/tag/testnet-v0.2.2) e [verifique o download](README.md#verificação-dos-downloads-da-real-26). Tenha a biblioteca de execução `libsqlite3-0` instalada. Depois, extraia o pacote e entre no diretório de extração.
 
 Use uma pasta de dados própria para o nó. O exemplo abaixo usa a lista de pares publicada no repositório. Copie o endereço atual do [arquivo de pares iniciais](carteira-desktop/pares-testnet.txt) para a variável `PAR`.
 
@@ -15,14 +15,14 @@ PAR=18.119.28.41:29838
 DADOS="$HOME/.real26-testnet"
 mkdir -p "$DADOS"
 
-./bitcoind -testnet4 -real26test -real26testrefs -real26testasert \
+./real26d -testnet4 -real26test -real26testrefs -real26testasert \
   -noconf -datadir="$DADOS" -addnode="$PAR" -listen=0 \
   -rpcbind=127.0.0.1 -rpcport=29837 -disablewallet=1 -daemon
 
-./bitcoin-cli -testnet4 -real26test -real26testrefs -real26testasert \
+./real26-cli -testnet4 -real26test -real26testrefs -real26testasert \
   -noconf -datadir="$DADOS" -rpcport=29837 -rpcwait getblockchaininfo
 
-./bitcoin-cli -testnet4 -real26test -real26testrefs -real26testasert \
+./real26-cli -testnet4 -real26test -real26testrefs -real26testasert \
   -noconf -datadir="$DADOS" -rpcport=29837 stop
 ```
 

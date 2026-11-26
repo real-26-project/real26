@@ -70,8 +70,8 @@ def copiar_pacote(destino, binarios):
         (destino / relativo).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(RAIZ / relativo, destino / relativo)
     (destino / "no-windows").mkdir()
-    for nome in ("bitcoind.exe", "bitcoin-cli.exe"):
-        arquivo = binarios / nome
+    for origem, nome in (("bitcoind.exe", "real26d.exe"), ("bitcoin-cli.exe", "real26-cli.exe")):
+        arquivo = binarios / origem
         with arquivo.open("rb") as entrada:
             cabecalho = entrada.read(64)
             if len(cabecalho) != 64 or cabecalho[:2] != b"MZ":

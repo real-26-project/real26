@@ -300,7 +300,7 @@ cmake -S . -B build-native -G Ninja \
 cmake --build build-native --target bitcoind bitcoin-cli -j 7
 ```
 
-No Windows, use Python x64 com Tcl/Tk e o NSIS. Passe a pasta com `bitcoind.exe` e `bitcoin-cli.exe` ao gerador. Ele grava o executável e o SHA-256 em `releases`.
+No Windows, use Python x64 com Tcl/Tk e o NSIS. Passe a pasta com `bitcoind.exe` e `bitcoin-cli.exe` ao gerador. O instalador distribui os binários como `real26d.exe` e `real26-cli.exe` e grava o instalador e seu SHA-256 em `releases`.
 
 ```powershell
 python carteira-desktop/testar_windows.py --binarios 'C:\compilacao\bin'

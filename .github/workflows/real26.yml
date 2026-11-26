@@ -27,7 +27,7 @@ jobs:
       - name: Instalar dependências
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build pkgconf libboost-dev libsqlite3-dev libssl-dev
+          sudo apt-get install -y build-essential cmake ninja-build pkgconf libboost-dev libsqlite3-dev libssl-dev python3-cryptography python3-mnemonic
 
       - name: Compilar a liboqs para ML-DSA-65
         run: |
@@ -42,6 +42,8 @@ jobs:
 
       - name: Compilar a REAL-26 e executar as oito suítes
         run: |
+          export PATH="/usr/bin:$PATH"
+          python3 -c "import cryptography, mnemonic"
           cmake -S . -B build -G Ninja -DBUILD_GUI=OFF -DBUILD_TESTS=ON \
             -DENABLE_IPC=OFF -DWITH_ZMQ=OFF -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_CXX_FLAGS_DEBUG=-g0 -DCMAKE_C_FLAGS_DEBUG=-g0 \
@@ -56,10 +58,10 @@ jobs:
           cd build
           sha256sum -c real26-testnet-ubuntu-x86_64.tar.gz.sha256
           tar -xzf real26-testnet-ubuntu-x86_64.tar.gz -C "$RUNNER_TEMP/pacote"
-          test -x "$RUNNER_TEMP/pacote/bitcoind"
-          test -x "$RUNNER_TEMP/pacote/bitcoin-cli"
-          "$RUNNER_TEMP/pacote/bitcoind" --version
-          "$RUNNER_TEMP/pacote/bitcoin-cli" --version
+          test -x "$RUNNER_TEMP/pacote/real26d"
+          test -x "$RUNNER_TEMP/pacote/real26-cli"
+          "$RUNNER_TEMP/pacote/real26d" --version | grep '^REAL-26 '
+          "$RUNNER_TEMP/pacote/real26-cli" --version | grep '^REAL-26 '
 
       - uses: actions/upload-artifact@v7
         with:

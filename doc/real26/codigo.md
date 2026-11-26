@@ -1,6 +1,6 @@
 # Código da REAL-26
 
-A REAL-26 deriva do Bitcoin Core 32.1 e mantém os nomes `bitcoind` e `bitcoin-cli` para o nó e a interface de linha de comando. Os parâmetros, as regras de gasto e a carteira desktop da REAL-26 estão nos pontos abaixo.
+A REAL-26 deriva do Bitcoin Core 32.1 e distribui o nó `real26d` e o cliente de linha de comando `real26-cli`. Os parâmetros, as regras de gasto e a carteira desktop da REAL-26 estão nos pontos abaixo.
 
 | Componente | Onde consultar |
 | --- | --- |

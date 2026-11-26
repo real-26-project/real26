@@ -47,8 +47,13 @@ class NoReal26:
         perfil = "No-testnet-ASERT-v2" if self.compartilhado else "No-ensaio"
         if self.nativo:
             pasta = Path(binarios).resolve()
-            self.cli = str(pasta / "bitcoin-cli.exe")
-            self.no = str(pasta / "bitcoind.exe")
+            cli = pasta / "real26-cli.exe"
+            no = pasta / "real26d.exe"
+            if not cli.exists() and not no.exists():
+                cli = pasta / "bitcoin-cli.exe"
+                no = pasta / "bitcoind.exe"
+            self.cli = str(cli)
+            self.no = str(no)
             self.datadir = Path(datadir or Path(os.environ["LOCALAPPDATA"]) / "REAL-26" / perfil).resolve()
         else:
             self.cli = f"{BINARIOS}/bitcoin-cli"

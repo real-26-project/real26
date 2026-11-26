@@ -13,7 +13,7 @@
 
 std::string CopyrightHolders(const std::string& strPrefix)
 {
-    const auto copyright_devs = strprintf(_(COPYRIGHT_HOLDERS), COPYRIGHT_HOLDERS_SUBSTITUTION).translated;
+    const auto copyright_devs = strprintf(_(COPYRIGHT_HOLDERS), "Bitcoin Core").translated;
     std::string strCopyrightHolders = strPrefix + copyright_devs;
 
     // Make sure Bitcoin Core copyright is not removed by accident
@@ -25,13 +25,13 @@ std::string CopyrightHolders(const std::string& strPrefix)
 
 std::string LicenseInfo()
 {
-    const std::string URL_SOURCE_CODE = "<https://github.com/bitcoin/bitcoin>";
+    const std::string URL_SOURCE_CODE = "<https://github.com/real-26-project/real26>";
 
     return CopyrightHolders(strprintf(_("Copyright (C) %i-%i"), 2009, COPYRIGHT_YEAR).translated + " ") + "\n" +
            "\n" +
            strprintf(_("Please contribute if you find %s useful. "
                        "Visit %s for further information about the software."),
-                     CLIENT_NAME, "<" CLIENT_URL ">")
+                     CLIENT_NAME, URL_SOURCE_CODE)
                .translated +
            "\n" +
            strprintf(_("The source code is available from %s."), URL_SOURCE_CODE).translated +
