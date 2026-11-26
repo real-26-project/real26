@@ -1,5 +1,7 @@
 # REAL-26
 
+Para instalar a carteira e participar da testnet, consulte o [guia de uso da REAL-26](doc/real26/uso.md).
+
 A REAL-26 é um projeto brasileiro de moeda digital de código aberto. O objetivo é permitir que qualquer pessoa verifique as regras da moeda, rode seu próprio nó e mantenha a custódia das próprias chaves. A documentação do projeto é escrita em português brasileiro.
 
 ## Regras de gasto da rede de desenvolvimento
@@ -100,13 +102,13 @@ python3 test/functional/feature_real26_asert_pq.py --configfile=build/test/confi
 
 #### Testnet compartilhada com ASERT
 
-O perfil `-testnet4 -real26test -real26testrefs -real26testasert` adota ASERT com meta de 5 minutos e meia-vida de 3 horas. Ele usa endereços `r26s`, porta P2P 29838, RPC 29837, diretório `real26testasert` e gênese e domínio de assinatura próprios. O alvo inicial de teste é `0x1f03ffff`. Os saldos do teste isolado pertencem à cadeia anterior.
+O perfil `-testnet4 -real26test -real26testrefs -real26testasert` adota ASERT com meta de 5 minutos e meia-vida de 3 horas. Ele usa endereços `r26s`, porta P2P 29838, RPC 29837, diretório `real26testasert-v2`, gênese e domínio de assinatura próprios. O alvo inicial de teste é `0x1c10e331`. O teste isolado tem cadeia e saldos próprios.
 
 Operadores precisam combinar um endereço P2P alcançável para o primeiro nó. Os demais podem adicionar esse endereço com `-addnode=HOST:29838`. Use o RPC apenas em loopback, autenticado pelo cookie do nó. O protocolo aceita conexões entre nós da mesma testnet. As moedas desta rede são de ensaio e não têm valor monetário.
 
 Na carteira nativa, clique em **Conectar à testnet**. O perfil compartilhado fica em `%LOCALAPPDATA%\REAL-26\No-testnet-ASERT-v2`. O ASERT usa o primeiro bloco minerado como referência, com meta de 5 minutos e meia-vida de 3 horas. O alvo inicial `0x1c10e331` exige cerca de 65 bilhões de hashes em média, calibrado para a Radeon do ensaio. Só com CPU o intervalo inicial esperado é maior. A versão anterior mantém seus dados no diretório No-testnet-ASERT. A carteira tenta o nó inicial da AWS em `carteira-desktop/pares-testnet.txt` via IPv4 e passa a descobrir outros pares após conectar. O endereço público da instância de teste pode mudar se ela for parada e iniciada novamente. O IP da conexão fica visível para os pares.
 
-Para cadastrar outro par, use **Adicionar nó**. Escreva um IPv6 com porta no formato `[IPv6]:29838`. A carteira guarda os endereços adicionais para as próximas sessões. No terminal, use `--testnet`; a opção `--par` pode ser repetida para acrescentar endereços.
+Para cadastrar outro par, use **Adicionar nó**. Informe um endereço no formato `host:29838`. Para IPv6, use `[IPv6]:29838`. A carteira guarda os endereços adicionais para as próximas sessões. No terminal, use `--testnet`; a opção `--par` pode ser repetida para acrescentar endereços.
 
 Quando a rede compartilhada contém apenas a gênese, conecte a carteira a pelo menos um par. Se o nó ainda não conhece cabeçalhos posteriores à gênese, a carteira mostra **Aguardando primeiro bloco** e permite iniciar a mineração. Se o nó detectar blocos mais novos, a mineração aguarda a sincronização.
 
@@ -346,7 +348,7 @@ Os dois modos usam o alvo informado pelo nó. A GPU filtra pelo prefixo do alvo,
 
 ## Base de desenvolvimento
 
-A base é o [Bitcoin Core 32.1](https://github.com/bitcoin/bitcoin/releases/tag/v32.1), revisão `f0de87f040621468b956f01f526a43a010310501`. O trabalho da REAL-26 começa na branch `codex/real-26`. A licença e os avisos de autoria estão em [COPYING](COPYING).
+A base é o [Bitcoin Core 32.1](https://github.com/bitcoin/bitcoin/releases/tag/v32.1), revisão `f0de87f040621468b956f01f526a43a010310501`. A branch pública de desenvolvimento da REAL-26 é `main`. A licença e os avisos de autoria estão em [COPYING](COPYING).
 
 O desenvolvimento começa em `regtest`, uma rede local com mineração sob demanda. A rede planejada terá gênese e identificadores próprios, intervalo-alvo de 10 minutos e orçamento inicial de 4 milhões de unidades de peso por bloco. A rede de desenvolvimento usa ML-DSA-65 para autorizar gastos.
 

@@ -2,15 +2,27 @@
 
 <img src="carteira-desktop/real26.png" alt="Símbolo da REAL-26" width="144">
 
-A REAL-26 é um projeto de moeda em desenvolvimento, baseado no Bitcoin Core. A rede de teste compartilhada usa assinaturas ML-DSA-65 e ajuste de dificuldade ASERT. A carteira nativa para Windows também oferece um perfil de ensaio isolado. Os saldos de teste não têm valor monetário.
+A REAL-26 é um projeto brasileiro de moeda digital de código aberto. A **testnet piloto** é uma rede P2P da REAL-26, com assinaturas ML-DSA-65, ajuste de dificuldade ASERT e meta de cinco minutos por bloco. As moedas da testnet são de teste e não têm valor monetário.
 
-- [Documentação da REAL-26 em português](README.pt-BR.md)
-- [Política de segurança](SECURITY.md)
-- [Licença e avisos de autoria](COPYING)
+## Teste no Windows
+
+1. Baixe o instalador **Windows x64** na [release oficial da REAL-26](https://github.com/real-26-project/real26/releases/tag/testnet-v0.2.0) e [verifique o download](#verificação-dos-downloads-da-real-26).
+2. Abra **REAL-26 Carteira Nativa** e clique em **Conectar à testnet**. A carteira tenta conectar automaticamente ao nó inicial da REAL-26.
+3. Crie uma carteira de teste ou escolha **Restaurar backup**. Use **Receber** para copiar seu endereço, **Enviar** para fazer um pagamento de teste ou inicie a mineração na carteira.
+
+O **Teste isolado** roda uma cadeia local com carteiras e saldos próprios. Para interagir com outros participantes, escolha **Conectar à testnet**. A edição nativa roda diretamente no Windows.
+
+## Documentação da REAL-26
+
+- [Guia de uso da carteira e da testnet](doc/real26/uso.md)
+- [Instalação do nó, compilação e testes](INSTALL.md)
+- [Mapa do código da REAL-26](doc/real26/codigo.md)
+- [Notas técnicas e resultados dos ensaios](README.pt-BR.md)
+- [Como contribuir](CONTRIBUTING.md) · [Política de segurança](SECURITY.md)
 
 ## Verificação dos downloads da REAL-26
 
-Baixe `SHA256SUMS` e `SHA256SUMS.asc` da [release oficial](https://github.com/real-26-project/real26/releases/tag/testnet-v0.2.0) e obtenha a [chave pública da REAL-26](REAL-26-RELEASE-KEY.asc). Confira a impressão digital antes de importar a chave.
+Na [release oficial](https://github.com/real-26-project/real26/releases/tag/testnet-v0.2.0), baixe `SHA256SUMS` e `SHA256SUMS.asc`. Obtenha a [chave pública da REAL-26](REAL-26-RELEASE-KEY.asc) e confirme que a impressão digital é `8BFA 04DE BE28 8B2B EBBD 3192 AA1B 07B0 3319 8941`.
 
 ```sh
 gpg --show-keys --fingerprint REAL-26-RELEASE-KEY.asc
@@ -18,83 +30,8 @@ gpg --import REAL-26-RELEASE-KEY.asc
 gpg --verify SHA256SUMS.asc SHA256SUMS
 ```
 
-A impressão digital da chave é `8BFA 04DE BE28 8B2B EBBD 3192 AA1B 07B0 3319 8941`. Compare o SHA-256 do arquivo baixado com a entrada correspondente no manifesto verificado. No PowerShell, use `Get-FileHash -Algorithm SHA256 CAMINHO_DO_ARQUIVO`. No Linux, use `sha256sum CAMINHO_DO_ARQUIVO`.
+Compare o SHA-256 do download com o manifesto verificado. No PowerShell, use `Get-FileHash -Algorithm SHA256 CAMINHO_DO_ARQUIVO`. No Linux, use `sha256sum CAMINHO_DO_ARQUIVO`. O instalador Windows desta prévia ainda está sem assinatura Authenticode.
 
-## Bitcoin Core integration/staging tree
+## Licença e origem
 
-https://bitcoincore.org
-
-For an immediately usable, binary version of the Bitcoin Core software, see
-https://bitcoincore.org/en/download/.
-
-What is Bitcoin Core?
----------------------
-
-Bitcoin Core connects to the Bitcoin peer-to-peer network to download and fully
-validate blocks and transactions. It also includes a wallet and graphical user
-interface, which can be optionally built.
-
-Further information about Bitcoin Core is available in the [doc folder](/doc).
-
-License
--------
-
-Bitcoin Core is released under the terms of the MIT license. See [COPYING](COPYING) for more
-information or see https://opensource.org/license/MIT.
-
-Development Process
--------------------
-
-The `master` branch is regularly built (see `doc/build-*.md` for instructions) and tested, but it is not guaranteed to be
-completely stable. [Tags](https://github.com/bitcoin/bitcoin/tags) are created
-regularly from release branches to indicate new official, stable release versions of Bitcoin Core.
-
-The https://github.com/bitcoin-core/gui repository is used exclusively for the
-development of the GUI. Its master branch is identical in all monotree
-repositories. Release branches and tags do not exist, so please do not fork
-that repository unless it is for development reasons.
-
-The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md)
-and useful hints for developers can be found in [doc/developer-notes.md](doc/developer-notes.md).
-
-Testing
--------
-
-Testing and code review is the bottleneck for development; we get more pull
-requests than we can review and test on short notice. Please be patient and help out by testing
-other people's pull requests, and remember this is a security-critical project where any mistake might cost people
-lots of money.
-
-### Automated Testing
-
-Developers are strongly encouraged to write [unit tests](src/test/README.md) for new code, and to
-submit new unit tests for old code. Unit tests can be compiled and run
-(assuming they weren't disabled during the generation of the build system) with: `ctest`. Further details on running
-and extending unit tests can be found in [/src/test/README.md](/src/test/README.md).
-
-There are also [regression and integration tests](/test), written
-in Python.
-These tests can be run (if the [test dependencies](/test) are installed) with: `build/test/functional/test_runner.py`
-(assuming `build` is your build directory).
-
-The CI (Continuous Integration) systems make sure that every pull request is tested on Windows, Linux, and macOS.
-The CI must pass on all commits before merge to avoid unrelated CI failures on new pull requests.
-
-### Manual Quality Assurance (QA) Testing
-
-Changes should be tested by somebody other than the developer who wrote the
-code. This is especially important for large or high-risk changes. It is useful
-to add a test plan to the pull request description if testing the changes is
-not straightforward.
-
-Translations
-------------
-
-Changes to translations as well as new translations can be submitted to
-[Bitcoin Core's Transifex page](https://explore.transifex.com/bitcoin/bitcoin/).
-
-Translations are periodically pulled from Transifex and merged into the git repository. See the
-[translation process](doc/translation_process.md) for details on how this works.
-
-**Important**: We do not accept translation changes as GitHub pull requests because the next
-pull from Transifex would automatically overwrite them again.
+A REAL-26 deriva do Bitcoin Core 32.1. Consulte [COPYING](COPYING) para a licença MIT e os avisos de autoria, e [licenças do nó](licencas/) para os componentes incorporados.
