@@ -8,6 +8,18 @@ A REAL-26 é um projeto de moeda em desenvolvimento, baseado no Bitcoin Core. A 
 - [Política de segurança](SECURITY.md)
 - [Licença e avisos de autoria](COPYING)
 
+## Verificação dos downloads da REAL-26
+
+Baixe `SHA256SUMS` e `SHA256SUMS.asc` da [release oficial](https://github.com/real-26-project/real26/releases/tag/testnet-v0.2.0) e obtenha a [chave pública da REAL-26](REAL-26-RELEASE-KEY.asc). Confira a impressão digital antes de importar a chave.
+
+```sh
+gpg --show-keys --fingerprint REAL-26-RELEASE-KEY.asc
+gpg --import REAL-26-RELEASE-KEY.asc
+gpg --verify SHA256SUMS.asc SHA256SUMS
+```
+
+A impressão digital da chave é `8BFA 04DE BE28 8B2B EBBD 3192 AA1B 07B0 3319 8941`. Compare o SHA-256 do arquivo baixado com a entrada correspondente no manifesto verificado. No PowerShell, use `Get-FileHash -Algorithm SHA256 CAMINHO_DO_ARQUIVO`. No Linux, use `sha256sum CAMINHO_DO_ARQUIVO`.
+
 ## Bitcoin Core integration/staging tree
 
 https://bitcoincore.org
